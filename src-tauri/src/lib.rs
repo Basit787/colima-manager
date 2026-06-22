@@ -1,5 +1,11 @@
 use std::process::Command;
 
+use tauri::{
+    Manager, menu::{Menu, MenuItem, PredefinedMenuItem}, tray::{TrayIconBuilder}
+};
+
+use std::sync::{Arc, Mutex};
+
 #[derive(serde::Serialize)]
 pub struct ColimaStatus {
     pub active: bool,
@@ -114,6 +120,33 @@ fn run_blocking_command(mut cmd: Command) -> Result<(), String> {
     Ok(())
 }
 
+fn spawn_update_tray_item<R: tauri::Runtime + 'static>(toggle: MenuItem<R>, status_item: MenuItem<R>) {
+    // Spawn an async task to check status and update the menu items
+    tauri::async_runtime::spawn(async move {
+        match get_colima_status().await {
+            Ok(status) => {
+                if status.active {
+                    let _ = toggle.set_text("Stop Colima");
+                    let _ = toggle.set_enabled(true);
+                        let _ = status_item.set_text("Status\t\t\t\t🟢");
+                    let _ = status_item.set_enabled(false);
+                } else {
+                    let _ = toggle.set_text("Start Colima");
+                    let _ = toggle.set_enabled(true);
+                        let _ = status_item.set_text("Status\t\t\t\t🔴");
+                    let _ = status_item.set_enabled(false);
+                }
+            }
+            Err(_) => {
+                let _ = toggle.set_text("Colima not present");
+                let _ = toggle.set_enabled(false);
+                    let _ = status_item.set_text("Status\t\t\t\t⚪️");
+                let _ = status_item.set_enabled(false);
+            }
+        }
+    });
+}
+
 #[tauri::command]
 async fn colima_start(args: Option<serde_json::Value>) -> Result<(), String> {
     let args = args.unwrap_or(serde_json::json!({}));
@@ -180,13 +213,107 @@ async fn colima_stop(args: Option<serde_json::Value>) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let should_exit = Arc::new(Mutex::new(false));
+    let exit_flag = should_exit.clone();
+
     tauri::Builder::default()
+        .setup(move |app| {
+            let window = app.get_webview_window("main").unwrap();
+            window.hide()?;
+
+            let open = MenuItem::with_id(app, "open", "Open App", true, None::<&str>)?;
+            // Use a tab between label and emoji so the OS places the emoji in a right-aligned column
+            let status = MenuItem::with_id(app, "status", "Status\t⚪️", false, None::<&str>)?;
+            let toggle = MenuItem::with_id(app, "toggle", "Start Colima", true, None::<&str>)?;
+            let toggle_for_setup = toggle.clone();
+            let status_for_setup = status.clone();
+            let separator = PredefinedMenuItem::separator(app)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+
+            let menu = Menu::with_items(
+                app,
+                &[&open, &separator, &status, &toggle, &separator, &quit],
+            )?;
+
+            let quit_flag = should_exit.clone();
+
+            let tray = TrayIconBuilder::new()
+                .menu(&menu)
+                .icon(app.default_window_icon().unwrap().clone())
+                .on_menu_event(move |app, event| {
+                    match event.id.as_ref() {
+                        "open" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.unminimize();
+                                let _ = window.set_focus();
+                            }
+                        }
+
+                        "toggle" => {
+                            // Disable the item and show a transient label while working
+                            let _ = toggle.set_enabled(false);
+                            // Decide action based on current status
+                            let toggle_for_task = toggle.clone();
+                            let status_for_task = status.clone();
+                            tauri::async_runtime::spawn(async move {
+                                let toggle = toggle_for_task;
+                                match get_colima_status().await {
+                                    Ok(s) => {
+                                        if s.active {
+                                            let _ = toggle.set_text("Stopping...");
+                                            let _ = colima_stop(None).await;
+                                        } else {
+                                            let _ = toggle.set_text("Starting...");
+                                            let _ = colima_start(None).await;
+                                        }
+                                    }
+                                    Err(_) => {
+                                        // If colima not present, keep it disabled with message
+                                    }
+                                }
+
+                                // Refresh label/state after operation
+                                spawn_update_tray_item(toggle.clone(), status_for_task.clone());
+                            });
+                        }
+
+                        "quit" => {
+                            *quit_flag.lock().unwrap() = true;
+                            app.exit(0);
+                        }
+
+                        _ => {}
+                    }
+                })
+                .build(app)?;
+
+            app.manage(tray);
+
+            // Initialize the toggle and status label/state on startup
+            spawn_update_tray_item(toggle_for_setup, status_for_setup);
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_colima_status,
             colima_start,
             colima_stop
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(move |_app_handle, event| {
+            if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                if !*exit_flag.lock().unwrap() {
+                    api.prevent_exit();
+                }
+            }
+        });
 }
