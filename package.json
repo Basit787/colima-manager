@@ -9,11 +9,11 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "dev:app": "pnpm tauri dev",
-    "lint:check": "eslint src/ && prettier --check 'src/**/*.{ts,tsx}'",
-    "lint:fix": "eslint src/ --fix && prettier --write 'src/**/*.{ts,tsx}'",
+    "lint:check": "eslint src/ && pnpm dlx prettier --check 'src/**/*.{ts,tsx}'",
+    "lint:fix": "eslint src/ --fix && pnpm dlx prettier --write 'src/**/*.{ts,tsx}'",
     "lint:rust": "cd src-tauri && cargo clippy --manifest-path Cargo.toml",
     "lint-staged-run": "lint-staged",
-    "prepare": "husky",
+    "husky": "husky",
     "build:macos": "pnpm tauri build --bundles dmg"
   },
   "dependencies": {
@@ -37,5 +37,6 @@
     "lint-staged": "^17.0.7",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"
-  }
+  },
+  "packageManager": "pnpm@11.8.0"
 }
