@@ -1,83 +1,49 @@
 # Colima Manager
 
-A desktop application for managing [Colima](https://github.com/colima-dev/colima) (Container Linux on macOS) built with Tauri 2, React 19, and TypeScript.
+A desktop application for managing [Colima](https://github.com/colima-dev/colima) built with Tauri 2, React 19, TypeScript, and Rust.
 
-## Tech Stack
+> Before making any changes, read `AGENTS.md`. It is the single source of truth for repository conventions, skills, and workflow.
 
-| Layer | Technology |
-|-------|-----------|
-| **Framework** | [Tauri 2](https://tauri.app/) |
-| **UI** | [React 19](https://react.dev/) |
-| **Language** | [TypeScript 5.8](https://www.typescriptlang.org/) |
-| **Build Tool** | [Vite 7](https://vitejs.dev/) |
-| **Backend** | Rust |
+## Repo Overview
 
-## Project Structure
-
-```
-├── src/                          # React frontend
-│   ├── main.tsx                  # Entry point
-│   └── App.tsx                   # Root component
-├── src-tauri/                    # Rust backend (Tauri)
-│   ├── src/
-│   │   ├── main.rs               # Rust entry point
-│   │   └── lib.rs                # Tauri builder + commands
-│   ├── tauri.conf.json           # Tauri configuration
-│   └── capabilities/default.json # App permissions
-└── public/                       # Static assets
-```
-
-- **`src/`** — React frontend. Entry: `main.tsx` → `App.tsx`
-- **`src-tauri/`** — Rust backend. Entry: `main.rs` → calls `colima_manager_lib::run()` in `lib.rs`
-- **`src-tauri/src/lib.rs`** — Tauri builder + commands. Add `#[tauri::command]` functions here; register via `generate_handler![]`
-- **`src-tauri/tauri.conf.json`** — App config. Frontend dist: `../dist`, dev port: 1420
-- **`src-tauri/capabilities/default.json`** — Capability permissions for the main window
+- `src/` — React frontend. Entry point: `main.tsx`
+- `src-tauri/` — Rust backend and Tauri integration
+- `public/` — Static assets
+- `AGENTS.md` — Repository-specific guidance for skills and workflows
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (with [pnpm](https://pnpm.io/))
+- [Node.js](https://nodejs.org/) with [pnpm](https://pnpm.io/)
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Xcode](https://developer.apple.com/xcode/) (macOS)
 
-### Installation
+### Install
 
 ```bash
 pnpm install
 ```
 
-### Available Scripts
+### Useful Commands
 
-All commands use **pnpm**. Do not substitute npm/yarn.
+Use `pnpm` for all commands in this repository.
 
-| Command            | Description                                           |
-| ------------------ | ----------------------------------------------------- |
-| `pnpm dev`         | Start Vite dev server only (port **1420**)            |
-| `pnpm tauri dev`   | Full Tauri desktop app (runs `pnpm dev` under the hood) |
-| `pnpm build`       | Build for production (`tsc && vite build`)            |
-| `pnpm tauri build` | Build and package the desktop app                     |
-| `pnpm build:macos` | Build macOS DMG installer (`--bundles dmg`)           |
-| `pnpm lint:check`  | Check linting and formatting                          |
-| `pnpm lint:fix`    | Fix linting and formatting issues                     |
+- `pnpm dev` — Start the Vite dev server on port `1420`
+- `pnpm tauri dev` — Run the full desktop app in development
+- `pnpm build` — Build the frontend and output production assets
+- `pnpm tauri build` — Package the desktop app
+- `pnpm build:macos` — Build a macOS DMG installer
+- `pnpm lint:check` — Check lint and formatting
+- `pnpm lint:fix` — Fix lint and formatting issues
 
-### Key Details
+## Repository Notes
 
-- Frontend dev server runs on port **1420** (not the default 5173)
-- Vite ignores `src-tauri/**` for file watching during `tauri dev`
-- Tauri dev host can be overridden via `TAURI_DEV_HOST` environment variable
-- TypeScript is configured with `strict: true`, `noUnusedLocals: true`, `noUnusedParameters: true`
-- The Rust library crate is named `colima_manager_lib` (differs from the package name `colima-manager`)
+- Frontend dev server port: `1420`
+- `src-tauri/**` is excluded from Vite file watching during `tauri dev`
+- `TAURI_DEV_HOST` can override the Tauri dev host
+- Rust crate name: `colima_manager_lib`
 
-## Commit & Pull Request Workflow
+## Where to Look First
 
-Commits and PRs are handled by OpenCode skills located in `.skills/`. It is not required to invoke them manually, but you can explicitly request `code-commit` or `pull-request` if you want to control the process.
-
-| Skill                 | What it does                                                                                |
-| --------------------- | ------------------------------------------------------------------------------------------- |
-| `.skills/code-commit/`  | Commits changes with a [Conventional Commits](https://www.conventionalcommits.org/) message |
-| `.skills/pull-request/` | Creates or updates a PR to `main` via GitHub CLI (`gh`)                                     |
-
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+Read `AGENTS.md` before doing anything else in this repository. It contains the repo-specific guidance for skills, conventions, and workflow.

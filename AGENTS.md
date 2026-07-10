@@ -33,7 +33,7 @@ Custom OpenCode skills live under `.skills/`. Load them with `skill` tool when t
 | ----------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.skills/code-commit/`   | User says "commit", "stage and commit", etc.       | Commits with Conventional Commits format (`feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`). Subject under 72 chars, imperative voice.    |
 | `.skills/pull-request/`  | User says "create a PR", "open pull request", etc. | Uses `gh create/edit`. Always targets `main`. If one PR exists for the branch, updates its description. If multiple exist, asks which one to update. |
-
+| `.skills/publish-release/` | User says "publish release", "create release", "draft release", etc. | Creates GitHub release drafts with local build artifacts using `gh`. Never publishes without explicit confirmation, and verifies auth, remote, tag, and assets. |
 ## Key Details
 
 - Frontend port is **1420** (hardcoded in `vite.config.ts` and `tauri.conf.json`), not the default 5173
